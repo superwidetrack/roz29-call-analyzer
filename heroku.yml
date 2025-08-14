@@ -1,0 +1,7 @@
+build:
+  docker:
+    web: Dockerfile
+    worker: Dockerfile
+run:
+  web: gunicorn app:app
+  worker: python main.py scheduler
