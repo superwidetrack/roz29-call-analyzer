@@ -3,5 +3,5 @@ build:
     web: Dockerfile
     worker: Dockerfile
 run:
-  web: gunicorn app:app
+  web: python main_backup.py
   worker: python main.py scheduler
