@@ -14,7 +14,7 @@ import pytz
 from prompt_loader import prompt_loader
 
 # Импортируем все функции из старого main.py
-from main_backup import (
+from main import (
     load_processed_calls, save_processed_call, authenticate_telfin, 
     get_recent_calls, download_recording, transcribe_with_yandex, 
     transcribe_with_openai, send_telegram_report, has_recording, 
@@ -84,19 +84,12 @@ def analyze_with_gpt_new(transcript, call_info=None):
         print(f"❌ Error during GPT-4 analysis: {e}")
         return {"status": "ignore", "error": str(e)}
 
-def main_new(deployment_check=False):
+def main_new():
     """
     NEW: Main function with updated logic - only alerts on critical manager errors
-    
-    Args:
-        deployment_check (bool): If True, process only last 2 calls for deployment verification
     """
-    if deployment_check:
-        print("=== 🚨 DEPLOYMENT CHECK: Processing Last 2 Calls ===")
-        print("🔍 Verifying system works after deployment")
-    else:
-        print("=== NEW: Critical Error Detection System for 29ROZ ===")
-        print("🎯 Focus: ONLY manager errors that cost sales")
+    print("=== NEW: Critical Error Detection System for 29ROZ ===")
+    print("🎯 Focus: ONLY manager errors that cost sales")
     
     hostname = os.environ.get("TELFIN_HOSTNAME") or os.getenv("TELFIN_HOSTNAME")
     login = os.environ.get("TELFIN_LOGIN") or os.getenv("TELFIN_LOGIN")
@@ -129,19 +122,13 @@ def main_new(deployment_check=False):
         print("Failed to retrieve calls.")
         return
     
-    # 🔄 Новая логика: режим проверки развертывания
-    if deployment_check:
-        # В режиме проверки - берём последние 2 звонка (игнорируем processed_calls)
-        new_calls = calls[-2:] if len(calls) >= 2 else calls
-        print(f"🔍 DEPLOYMENT CHECK: Processing last {len(new_calls)} calls (ignoring processed history)")
-    else:
-        # Обычный режим - только новые звонки
-        new_calls = [call for call in calls if call.get('call_uuid') not in processed_calls]
-        print(f"Found {len(calls)} total calls, {len(new_calls)} new calls to process")
-        
-        if not new_calls:
-            print("✅ No new calls to process.")
-            return
+    new_calls = [call for call in calls if call.get('call_uuid') not in processed_calls]
+    
+    print(f"Found {len(calls)} total calls, {len(new_calls)} new calls to process")
+    
+    if not new_calls:
+        print("✅ No new calls to process.")
+        return
     
     processed_count = 0
     critical_alerts = 0
@@ -282,36 +269,21 @@ def main_new(deployment_check=False):
             print(f"❌ No recording available")
             save_processed_call(call_uuid, "no_recording")
     
-    if deployment_check:
-        print(f"\n=== 🚨 DEPLOYMENT CHECK COMPLETE ===")
-        print(f"Calls checked: {len(new_calls)}")
-        print(f"Incoming calls with recordings found: {len(incoming_calls_with_recordings)}")
-        print(f"Calls processed: {processed_count}")
-        print(f"🚨 CRITICAL ALERTS SENT: {critical_alerts}")
-        if processed_count > 0:
-            print("✅ DEPLOYMENT VERIFICATION: System is working correctly!")
-            print("🚀 Ready for production use")
-        else:
-            print("⚠️ DEPLOYMENT CHECK: No calls with recordings found in last 2 calls")
-            print("📋 This is normal if recent calls had no recordings")
-    else:
-        print(f"\n=== NEW ANALYSIS COMPLETE ===")
-        print(f"Total calls retrieved: {len(calls)}")
-        print(f"New calls found: {len(new_calls)}")
-        print(f"Incoming calls with recordings: {len(incoming_calls_with_recordings)}")
-        print(f"Calls processed: {processed_count}")
-        print(f"🚨 CRITICAL ALERTS SENT: {critical_alerts}")
-        print("🎯 System focused on critical manager errors only")
+    print(f"\n=== NEW ANALYSIS COMPLETE ===")
+    print(f"Total calls retrieved: {len(calls)}")
+    print(f"New calls found: {len(new_calls)}")
+    print(f"Incoming calls with recordings: {len(incoming_calls_with_recordings)}")
+    print(f"Calls processed: {processed_count}")
+    print(f"🚨 CRITICAL ALERTS SENT: {critical_alerts}")
+    print("🎯 System focused on critical manager errors only")
 
 if __name__ == "__main__":
     import sys
     if len(sys.argv) > 1 and sys.argv[1] == "scheduler":
         main_new()
-    elif len(sys.argv) > 1 and sys.argv[1] == "deployment-check":
-        main_new(deployment_check=True)
     elif os.environ.get("PORT"):
         # Keep web handler from original main.py
-        from main_backup import web_handler
+        from main import web_handler
         web_handler()
     else:
         main_new()

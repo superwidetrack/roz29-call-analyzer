@@ -19,7 +19,7 @@ class PromptLoader:
             'classification': 'step1_classification.txt', 
             'manager_codes': 'manager_fault_codes.txt',
             'detailed_analysis': 'step2_detailed_analysis.txt',
-            'telegram_template': 'telegram_report_template.txt'
+            'final_instructions': 'final_instructions.txt'
         }
         
         for key, filename in prompt_files.items():
@@ -55,7 +55,7 @@ class PromptLoader:
         # Форматируем информацию о звонке
         call_details = self._format_call_info(call_info)
         
-        # Собираем промпт из частей
+        # Собираем промпт для новой логики
         full_prompt = f"""{self.prompts['system_context']}
 
 {call_details}
@@ -71,11 +71,7 @@ class PromptLoader:
 
 {self.prompts['detailed_analysis']}
 
-**ВАЖНО:** 
-- Анализируй объективно на основе фактов из транскрипции
-- Если вина менеджера неочевидна, укажи UNKNOWN или CLIENT_FAULT
-- Фокусируйся на конкретных действиях, которые помогут улучшить продажи
-- Отчет должен быть максимально кратким и действенным
+{self.prompts['final_instructions']}
 """
         return full_prompt
     
@@ -96,9 +92,18 @@ class PromptLoader:
             return f"**Информация о звонке:**\n" + " | ".join(details) + "\n"
         return ""
     
-    def get_telegram_template(self):
-        """Возвращает шаблон для Telegram отчета"""
-        return self.prompts['telegram_template']
+    def get_alert_template(self):
+        """Возвращает шаблон для аварийного отчета"""
+        return """🟥 **ПРОДАЖА УПУЩЕНА (ВИНА МЕНЕДЖЕРА)**
+
+⚙️ **Ошибка:** {error_code} - {error_description}
+📞 **Клиент:** {client_phone}
+📋 **Контекст:** {context}
+
+➡️ **Как можно было спасти:** {solution}
+
+---
+*Система контроля качества 29ROZ*"""
     
     def reload_prompts(self):
         """Перезагружает все промпты из файлов"""
